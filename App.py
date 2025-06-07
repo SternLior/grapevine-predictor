@@ -65,10 +65,11 @@ if st.session_state.get("retrain_after_delete"):
         st.rerun()
 
 # Section 2: Upload new data
-st.sidebar.subheader("📄 Add New Data for Training")
+st.sidebar.subheader("📤  Add New Data for Training")
 st.sidebar.info("""
-Download the template, fill it with your data, and upload the completed file.
-Make sure not to change the column names so the system can read it correctly.
+Adding more data can improve model accuracy.
+
+Download the appropriate template, fill it with your data, and upload the completed file. Make sure not to change the column names so the system can read it correctly..
 """)
 
 with open("Metabolite_Data_Year_Template.xlsx", "rb") as metabofile:
