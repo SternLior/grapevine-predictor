@@ -4,15 +4,20 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 import importlib
+import joblib
 
-from Train_Model import (
-    predictions_met, predictions_phy,
-    metabolite_features, physiological_features,
-    r2_scores_met, r2_scores_phy,
-    model_types_met, model_types_phy,
-    mae_scores_met, mae_scores_phy,
-    sample_counts_met, sample_counts_phy
-)
+predictions_met = joblib.load("models/predictions_met.pkl")
+predictions_phy = joblib.load("models/predictions_phy.pkl")
+metabolite_features = joblib.load("models/metabolite_features.pkl")
+physiological_features = joblib.load("models/physiological_features.pkl")
+r2_scores_met = joblib.load("models/r2_scores_met.pkl")
+r2_scores_phy = joblib.load("models/r2_scores_phy.pkl")
+model_types_met = joblib.load("models/model_types_met.pkl")
+model_types_phy = joblib.load("models/model_types_phy.pkl")
+mae_scores_met = joblib.load("models/mae_scores_met.pkl")
+mae_scores_phy = joblib.load("models/mae_scores_phy.pkl")
+sample_counts_met = joblib.load("models/sample_counts_met.pkl")
+sample_counts_phy = joblib.load("models/sample_counts_phy.pkl")
 
 st.set_page_config(page_title="Grapevine Prediction App", layout="wide")
 st.title("🍇 Grapevine Prediction App")

@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import os
+import joblib
 
 pd.set_option('display.float_format', '{:.4f}'.format)
 
@@ -132,3 +133,18 @@ train_models(metabolite_df, metabolite_features, "metabolite", predictions_met, 
 train_models(physiological_df, physiological_features, "physiological", predictions_phy, r2_scores_phy)
 
 print("\nFinished training.")
+
+os.makedirs("models", exist_ok=True)
+
+joblib.dump(predictions_met, "models/predictions_met.pkl")
+joblib.dump(predictions_phy, "models/predictions_phy.pkl")
+joblib.dump(r2_scores_met, "models/r2_scores_met.pkl")
+joblib.dump(r2_scores_phy, "models/r2_scores_phy.pkl")
+joblib.dump(mae_scores_met, "models/mae_scores_met.pkl")
+joblib.dump(mae_scores_phy, "models/mae_scores_phy.pkl")
+joblib.dump(model_types_met, "models/model_types_met.pkl")
+joblib.dump(model_types_phy, "models/model_types_phy.pkl")
+joblib.dump(sample_counts_met, "models/sample_counts_met.pkl")
+joblib.dump(sample_counts_phy, "models/sample_counts_phy.pkl")
+joblib.dump(metabolite_features, "models/metabolite_features.pkl")
+joblib.dump(physiological_features, "models/physiological_features.pkl")
