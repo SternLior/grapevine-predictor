@@ -6,18 +6,29 @@ import numpy as np
 import importlib
 import joblib
 
-predictions_met = joblib.load("models/predictions_met.pkl")
-predictions_phy = joblib.load("models/predictions_phy.pkl")
-metabolite_features = joblib.load("models/metabolite_features.pkl")
-physiological_features = joblib.load("models/physiological_features.pkl")
-r2_scores_met = joblib.load("models/r2_scores_met.pkl")
-r2_scores_phy = joblib.load("models/r2_scores_phy.pkl")
-model_types_met = joblib.load("models/model_types_met.pkl")
-model_types_phy = joblib.load("models/model_types_phy.pkl")
-mae_scores_met = joblib.load("models/mae_scores_met.pkl")
-mae_scores_phy = joblib.load("models/mae_scores_phy.pkl")
-sample_counts_met = joblib.load("models/sample_counts_met.pkl")
-sample_counts_phy = joblib.load("models/sample_counts_phy.pkl")
+# === Function to Load Models ===
+def load_model_state():
+    global predictions_met, predictions_phy
+    global metabolite_features, physiological_features
+    global r2_scores_met, r2_scores_phy
+    global model_types_met, model_types_phy
+    global mae_scores_met, mae_scores_phy
+    global sample_counts_met, sample_counts_phy
+
+    predictions_met = joblib.load("models/predictions_met.pkl")
+    predictions_phy = joblib.load("models/predictions_phy.pkl")
+    metabolite_features = joblib.load("models/metabolite_features.pkl")
+    physiological_features = joblib.load("models/physiological_features.pkl")
+    r2_scores_met = joblib.load("models/r2_scores_met.pkl")
+    r2_scores_phy = joblib.load("models/r2_scores_phy.pkl")
+    model_types_met = joblib.load("models/model_types_met.pkl")
+    model_types_phy = joblib.load("models/model_types_phy.pkl")
+    mae_scores_met = joblib.load("models/mae_scores_met.pkl")
+    mae_scores_phy = joblib.load("models/mae_scores_phy.pkl")
+    sample_counts_met = joblib.load("models/sample_counts_met.pkl")
+    sample_counts_phy = joblib.load("models/sample_counts_phy.pkl")
+
+load_model_state()
 
 st.set_page_config(page_title="Grapevine Prediction App", layout="wide")
 st.title("🍇 Grapevine Prediction App")
@@ -43,7 +54,6 @@ if trained_files:
         col1.markdown(f"📄 {display_name}")
         if col2.button("🗑️", key=f"delete_{file}"):
             os.remove(os.path.join(uploaded_dir, file))
-
             st.sidebar.info("The file was removed. Please click **Retrain Model** below to update the model without this file.")
             st.session_state["retrain_after_delete"] = True
 else:
@@ -55,16 +65,7 @@ if st.session_state.get("retrain_after_delete"):
     if st.sidebar.button("Run Training (after delete)"):
         with st.spinner("Training model... Please wait."):
             os.system("python Train_Model.py")
-        import Train_Model
-        importlib.reload(Train_Model)
-        from Train_Model import (
-            predictions_met, predictions_phy,
-            metabolite_features, physiological_features,
-            r2_scores_met, r2_scores_phy,
-            model_types_met, model_types_phy,
-            mae_scores_met, mae_scores_phy,
-            sample_counts_met, sample_counts_phy
-        )
+        load_model_state()
         st.sidebar.success("Model retrained successfully!")
         st.session_state.pop("retrain_after_delete")
         st.rerun()
@@ -118,23 +119,13 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
                 f.write(uploaded.getbuffer())
             with st.spinner("Training model... Please wait."):
                 os.system("python Train_Model.py")
-            import Train_Model
-            importlib.reload(Train_Model)
-            from Train_Model import (
-                predictions_met, predictions_phy,
-                metabolite_features, physiological_features,
-                r2_scores_met, r2_scores_phy,
-                model_types_met, model_types_phy,
-                mae_scores_met, mae_scores_phy,
-                sample_counts_met, sample_counts_phy
-            )
+            load_model_state()
             st.sidebar.success("Model retrained successfully!")
             st.session_state["retrain_button_clicked"] = True
             st.session_state.pop("retrain_needed")
             st.rerun()
 
-
-# --- Prediction Interface ---
+# === Prediction Interface ===
 user_temp = st.slider("Select Temperature (°C)", min_value=10.0, max_value=45.0, step=0.5, value=35.0)
 all_varieties_met = sorted(set([k[0] for k in predictions_met.keys()]))
 all_varieties_phy = sorted(set([k[0] for k in predictions_phy.keys()]))
@@ -216,7 +207,7 @@ if st.button("Generate Predictions"):
             preds[variety] = {"Prediction": pred, "R²": r2}
         if preds:
             df = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
-            df["MAE%"] = df.apply(lambda row: mae_scores_met.get((row["Variety"], feature), np.nan), axis=1)
+            df["MAE%"] = df.apply(lambda row: mae_scores_phy.get((row["Variety"], feature), np.nan), axis=1)
             df["MAE%"] = df["MAE%"].map("{:.2f}".format)
             df["Model"] = df.apply(lambda row: model_types_phy.get((row["Variety"], feature), ""), axis=1)
             df["Samples"] = df.apply(lambda row: sample_counts_phy.get((row["Variety"], feature), np.nan), axis=1)
