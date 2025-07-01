@@ -5,6 +5,7 @@ import plotly.express as px
 import numpy as np
 import importlib
 import joblib
+from Train_Model import train_and_save_models  # ✅ שורת הייבוא החדשה
 
 # === Function to Load Models ===
 def load_model_state():
@@ -64,7 +65,7 @@ if st.session_state.get("retrain_after_delete"):
     st.sidebar.subheader("🔁 Retrain Model")
     if st.sidebar.button("Run Training (after delete)"):
         with st.spinner("Training model... Please wait."):
-            os.system("python Train_Model.py")
+            train_and_save_models()  # ✅ שינוי כאן
         load_model_state()
         st.sidebar.success("Model retrained successfully!")
         st.session_state.pop("retrain_after_delete")
@@ -118,7 +119,7 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
             with open(trained_path, "wb") as f:
                 f.write(uploaded.getbuffer())
             with st.spinner("Training model... Please wait."):
-                os.system("python Train_Model.py")
+                train_and_save_models()  # ✅ שינוי כאן
             load_model_state()
             st.sidebar.success("Model retrained successfully!")
             st.session_state["retrain_button_clicked"] = True

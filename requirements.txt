@@ -2,7 +2,7 @@ streamlit~=1.44.1
 pandas~=2.2.3
 numpy~=2.2.0
 scikit-learn~=1.6.1
-xgboost~=2.0.3
+xgboost~=3.0.0
 plotly~=6.0.1
 openpyxl
 joblib~=1.4.2
