@@ -1,0 +1,109 @@
+Type,Variety,Feature,Best Model,R²,MAE%,Samples
+metabolite,Petit Syrah,Alanine,LinearRegression,0.3470821178598653,51.41848595997859,190
+metabolite,Petit Syrah,"Butanoic acid, 2,4-dihydroxy",RandomForest,0.43782083993835397,29.735601254958155,190
+metabolite,Petit Syrah,Cinnamic acid,RandomForest,0.09131463220843727,29.92033968340786,180
+metabolite,Petit Syrah,Citric acid,RandomForest,0.21867771889455057,44.74184609523923,190
+metabolite,Petit Syrah,Fructose,RandomForest,0.3721066748055448,20.76636306820234,190
+metabolite,Petit Syrah,Galactose,RandomForest,0.3380518317026925,20.669973369984625,190
+metabolite,Petit Syrah,Glucose,RandomForest,0.31101886439202364,22.332737026703185,190
+metabolite,Petit Syrah,Glycine,RandomForest,0.44495068590504905,38.14334863436414,190
+metabolite,Petit Syrah,"Inositol, myo",RandomForest,0.46747972220403544,17.854572077546198,190
+metabolite,Petit Syrah,Malic acid,XGBoost,0.2167831520537482,44.78187232361717,190
+metabolite,Petit Syrah,Melibiose,RandomForest,0.3749368685784211,53.99631204094379,175
+metabolite,Petit Syrah,Sucrose,RandomForest,0.4300670324980871,18.045151830003352,190
+metabolite,Petit Verdot,Alanine,LinearRegression,0.282744764123651,59.13305208050773,185
+metabolite,Petit Verdot,"Butanoic acid, 2,4-dihydroxy",XGBoost,0.26087718170679797,24.753090880423656,190
+metabolite,Petit Verdot,Cinnamic acid,RandomForest,0.26854776104506917,20.764530245130548,190
+metabolite,Petit Verdot,Citric acid,LinearRegression,-0.007348742406747766,27.61484432619851,190
+metabolite,Petit Verdot,Fructose,XGBoost,0.0707490961014201,17.2109735028441,190
+metabolite,Petit Verdot,Galactose,XGBoost,0.1163405174769796,17.287904247856815,185
+metabolite,Petit Verdot,Glucose,XGBoost,0.13402546702792761,17.684599639432346,185
+metabolite,Petit Verdot,Glycine,XGBoost,0.5226340753521207,31.380062172460676,190
+metabolite,Petit Verdot,"Inositol, myo",XGBoost,0.29234106081534617,12.677046182805645,190
+metabolite,Petit Verdot,Malic acid,RandomForest,0.03987177446986556,22.773512302136474,190
+metabolite,Petit Verdot,Melibiose,XGBoost,0.29519447913957575,46.18387865143471,190
+metabolite,Petit Verdot,Sucrose,XGBoost,0.39861373023339564,16.094644714298532,185
+metabolite,Pinot Noir,Alanine,XGBoost,0.296444821147706,47.50934886839679,190
+metabolite,Pinot Noir,"Butanoic acid, 2,4-dihydroxy",LinearRegression,0.13604774460548907,42.42076055129414,190
+metabolite,Pinot Noir,Cinnamic acid,RandomForest,0.0955255985914274,38.079202456745406,180
+metabolite,Pinot Noir,Citric acid,LinearRegression,0.037225059584417464,51.58385643336619,190
+metabolite,Pinot Noir,Fructose,LinearRegression,0.0047190269206367486,32.56626054551523,190
+metabolite,Pinot Noir,Galactose,LinearRegression,0.015068005245786109,34.525603672295816,190
+metabolite,Pinot Noir,Glucose,LinearRegression,0.01555298479726519,35.528561986659255,190
+metabolite,Pinot Noir,Glycine,LinearRegression,-0.5099879744685201,60.95977134646808,180
+metabolite,Pinot Noir,"Inositol, myo",LinearRegression,0.015555774529402266,29.99356194045484,190
+metabolite,Pinot Noir,Malic acid,LinearRegression,-0.012150596567528149,41.93752781708139,190
+metabolite,Pinot Noir,Melibiose,XGBoost,-0.33192958015460583,55.51500584135736,170
+metabolite,Pinot Noir,Sucrose,LinearRegression,0.2160585241212123,30.5825533912281,190
+metabolite,Sangiovese,Alanine,RandomForest,0.3371290921969081,33.78740780769142,185
+metabolite,Sangiovese,"Butanoic acid, 2,4-dihydroxy",RandomForest,-0.006008382092248077,33.94343964308032,190
+metabolite,Sangiovese,Cinnamic acid,LinearRegression,0.008671825085438178,14.477166746235362,190
+metabolite,Sangiovese,Citric acid,LinearRegression,-0.006968879377766468,21.498223199722663,190
+metabolite,Sangiovese,Fructose,XGBoost,0.4682692528700009,11.31215362968539,190
+metabolite,Sangiovese,Galactose,XGBoost,0.35655679979936017,14.874099718691895,190
+metabolite,Sangiovese,Glucose,XGBoost,0.2276425801817613,14.06909942067588,185
+metabolite,Sangiovese,Glycine,XGBoost,0.2866707104269912,31.765997816104257,190
+metabolite,Sangiovese,"Inositol, myo",RandomForest,0.2662973143385319,12.133442709103868,190
+metabolite,Sangiovese,Malic acid,RandomForest,0.11848665429923133,17.12199760690129,190
+metabolite,Sangiovese,Melibiose,RandomForest,0.17698460299679064,52.41116954589668,174
+metabolite,Sangiovese,Sucrose,RandomForest,0.3298365058677498,11.9545428069492,190
+metabolite,Syrah,Alanine,XGBoost,0.33512846225692416,49.86983492425024,184
+metabolite,Syrah,"Butanoic acid, 2,4-dihydroxy",XGBoost,0.08579593595344026,34.46320430976599,184
+metabolite,Syrah,Cinnamic acid,XGBoost,-0.025814834015580823,37.06750760349953,190
+metabolite,Syrah,Citric acid,RandomForest,0.17436393156668772,29.466247432488423,190
+metabolite,Syrah,Fructose,XGBoost,0.0764610047519757,27.90048346612746,190
+metabolite,Syrah,Galactose,XGBoost,0.11925570422138232,27.104450874746465,190
+metabolite,Syrah,Glucose,LinearRegression,0.0716301358675081,25.078855490557,184
+metabolite,Syrah,Glycine,XGBoost,0.2390336703154604,38.11881508526576,190
+metabolite,Syrah,"Inositol, myo",XGBoost,0.14932064372235332,20.602605066743827,190
+metabolite,Syrah,Malic acid,XGBoost,0.2400597419459487,28.665967548015136,190
+metabolite,Syrah,Melibiose,RandomForest,0.5045433589771211,57.18555621678153,178
+metabolite,Syrah,Sucrose,LinearRegression,0.3017208773575625,21.852069582748047,190
+metabolite,Tempranillo,Alanine,LinearRegression,0.3393539630009905,53.027862850604976,190
+metabolite,Tempranillo,"Butanoic acid, 2,4-dihydroxy",XGBoost,0.04520346100039463,27.810916191328626,190
+metabolite,Tempranillo,Cinnamic acid,RandomForest,0.27636317917821285,24.921898733179603,190
+metabolite,Tempranillo,Citric acid,RandomForest,0.16150551968882176,27.744966557046318,190
+metabolite,Tempranillo,Fructose,RandomForest,0.4738414280944401,14.61286051606367,190
+metabolite,Tempranillo,Galactose,RandomForest,0.4145668696807654,16.118283582609138,190
+metabolite,Tempranillo,Glucose,RandomForest,0.4103641345948503,17.21246704220571,190
+metabolite,Tempranillo,Glycine,XGBoost,0.4252866814298931,31.709540661761913,190
+metabolite,Tempranillo,"Inositol, myo",RandomForest,0.5530042785516589,9.063283666246615,190
+metabolite,Tempranillo,Malic acid,RandomForest,0.37027757057133803,20.18105278150915,190
+metabolite,Tempranillo,Melibiose,RandomForest,0.7347979288641562,32.18652085606168,181
+metabolite,Tempranillo,Sucrose,XGBoost,0.5746670730809288,12.838521642239176,190
+physiological,Petit Syrah,A,LinearRegression,0.46607570974654267,16.11740199581728,48
+physiological,Petit Syrah,gs,LinearRegression,0.6615879797942639,25.816091279822423,48
+physiological,Petit Syrah,Tleaf,RandomForest,0.97778230803495,1.369825638658781,48
+physiological,Petit Syrah,PhiPS2,XGBoost,0.9675503237997725,6.2031265640111295,48
+physiological,Petit Syrah,ETR,RandomForest,0.09611725370059399,9.6604721140637,48
+physiological,Petit Syrah,NPQ,RandomForest,0.7216948080499331,20.368560920548898,48
+physiological,Petit Verdot,A,XGBoost,0.6319777002938182,17.628173050443753,48
+physiological,Petit Verdot,gs,RandomForest,0.3884738891041436,30.818071019178504,48
+physiological,Petit Verdot,Tleaf,XGBoost,0.9923363682263124,0.8557691853527113,48
+physiological,Petit Verdot,PhiPS2,RandomForest,0.8672916083679967,12.587265194850564,48
+physiological,Petit Verdot,ETR,RandomForest,-0.083619809310163,14.437590964320151,48
+physiological,Petit Verdot,NPQ,XGBoost,0.4820836131558224,26.79264094457774,48
+physiological,Pinot Noir,A,XGBoost,0.3452401557779663,36.87771870671921,48
+physiological,Pinot Noir,gs,RandomForest,0.525645856595548,28.671230322983064,48
+physiological,Pinot Noir,Tleaf,RandomForest,0.9842498782063995,1.1047849751279941,48
+physiological,Pinot Noir,PhiPS2,RandomForest,0.9779021336041945,6.199956726724406,48
+physiological,Pinot Noir,ETR,XGBoost,0.7684403206090555,8.647745369863744,48
+physiological,Pinot Noir,NPQ,RandomForest,0.9286910069558143,9.886583203485301,48
+physiological,Sangiovese,A,LinearRegression,0.15851014654511852,33.724757060869905,48
+physiological,Sangiovese,gs,XGBoost,0.6413824008221009,30.728111232214133,48
+physiological,Sangiovese,Tleaf,XGBoost,0.9582665885464916,1.6923923552506488,48
+physiological,Sangiovese,PhiPS2,RandomForest,0.9380491349247028,10.203011611762381,48
+physiological,Sangiovese,ETR,XGBoost,0.20436899932233943,17.410421543543787,48
+physiological,Sangiovese,NPQ,RandomForest,0.29869065138892825,34.31177021628044,48
+physiological,Syrah,A,XGBoost,-0.38943497712694564,46.16917062347722,48
+physiological,Syrah,gs,XGBoost,0.23796050916571498,32.92080909883177,48
+physiological,Syrah,Tleaf,RandomForest,0.9772418943770071,1.2961943301250756,48
+physiological,Syrah,PhiPS2,RandomForest,0.9192922004764082,13.320179242523327,48
+physiological,Syrah,ETR,RandomForest,0.4111803016772946,19.271758353660328,48
+physiological,Syrah,NPQ,XGBoost,0.663396941441526,32.88923236817334,48
+physiological,Tempranillo,A,XGBoost,0.4794676295313519,27.130269513165896,48
+physiological,Tempranillo,gs,LinearRegression,0.562693036658032,33.82582426426587,48
+physiological,Tempranillo,Tleaf,XGBoost,0.9735932430268568,1.5100021767939809,48
+physiological,Tempranillo,PhiPS2,RandomForest,0.8576288531542186,12.98901606575126,48
+physiological,Tempranillo,ETR,LinearRegression,-0.05766275262748155,16.99131372424726,48
+physiological,Tempranillo,NPQ,XGBoost,0.7194193726463831,19.646353461786102,48

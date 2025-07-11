@@ -21,10 +21,6 @@ def train_and_save_models():
         if f.startswith("trained__") and f.endswith(".xlsx")
     ]
 
-    print("\nExtra training files:")
-    for f in used_files:
-        print(f"  - {f}")
-
     classified_files = {"metabolite": [], "physiological": [], "unknown": []}
     file_dataframes = {}
 
@@ -44,22 +40,19 @@ def train_and_save_models():
             dtype = detect_type(df)
             file_dataframes[fpath] = df
             classified_files[dtype].append(fpath)
-            print(f"Classified {os.path.basename(fpath)} as {dtype}")
-        except Exception as e:
-            print(f"Failed to read {fpath}: {e}")
+        except Exception:
             classified_files["unknown"].append(fpath)
 
-    def load_all_data(base_file, extra_file_paths, feature_type):
+    def load_all_data(base_file, extra_file_paths):
         dfs = [pd.read_excel(base_file)]
         for path in extra_file_paths:
             if path in file_dataframes:
                 dfs.append(file_dataframes[path])
         combined = pd.concat(dfs, ignore_index=True)
-        print(f"Loaded {len(combined)} rows for {feature_type}")
         return combined
 
-    metabolite_df = load_all_data(base_metabolite_file, classified_files["metabolite"], "metabolite")
-    physiological_df = load_all_data(base_physiological_file, classified_files["physiological"], "physiological")
+    metabolite_df = load_all_data(base_metabolite_file, classified_files["metabolite"])
+    physiological_df = load_all_data(base_physiological_file, classified_files["physiological"])
 
     non_feature_cols = ['Date', 'Time', 'Sample', 'Variety', 'Plot', 'obs', 'ID', 'Temperature (°C)', 'Avg_temp_72h (°C)', 'Max_temp_24h (°C)']
     metabolite_features = [col for col in metabolite_df.columns if col not in non_feature_cols]
@@ -71,15 +64,14 @@ def train_and_save_models():
     model_types_phy, mae_scores_phy, sample_counts_phy = {}, {}, {}
 
     def train_models(df, features, name, store_dict, score_dict):
-        print(f"\nTraining models for: {name}")
+        print(f"🔁 Training started for {name} features...")
         df = df[['Temperature (°C)', 'Variety'] + features].dropna(subset=['Temperature (°C)', 'Variety'])
 
         for variety in df['Variety'].unique():
             variety_df = df[df['Variety'] == variety]
-            print(f"  Variety: {variety}")
             for feature in features:
                 data_filtered = variety_df[['Temperature (°C)', feature]].dropna()
-                if data_filtered.empty or len(data_filtered) < 3:
+                if data_filtered.empty or len(data_filtered) < 10:
                     continue
 
                 X = data_filtered[['Temperature (°C)']]
@@ -89,10 +81,12 @@ def train_and_save_models():
                     continue
 
                 models = {
-                    'XGBoost': XGBRegressor(n_estimators=50, max_depth=4, learning_rate=0.1, random_state=42),
-                    'RandomForest': RandomForestRegressor(n_estimators=100, random_state=42),
+                    'XGBoost': XGBRegressor(n_estimators=50, max_depth=4, learning_rate=0.1, random_state=42,
+                                            n_jobs=-1),
+                    'RandomForest': RandomForestRegressor(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1),
                     'LinearRegression': LinearRegression()
                 }
+
 
                 results = {}
                 for model_name, model in models.items():
@@ -107,7 +101,6 @@ def train_and_save_models():
 
                 best_model_name = max(results, key=lambda k: results[k][2])
                 best_mae, best_rmse, best_r2, best_mae_percent, best_model = results[best_model_name]
-                print(f"    {feature}: Best={best_model_name}, R²={best_r2:.4f}, MAE%={best_mae_percent:.2f}, Samples={len(data_filtered)}")
 
                 store_dict[(variety, feature)] = best_model
                 score_dict[(variety, feature)] = best_r2
@@ -121,11 +114,12 @@ def train_and_save_models():
                     mae_scores_phy[(variety, feature)] = best_mae_percent
                     sample_counts_phy[(variety, feature)] = len(data_filtered)
 
+        print(f"✅ Finished training for {name}.")
+
     train_models(metabolite_df, metabolite_features, "metabolite", predictions_met, r2_scores_met)
     train_models(physiological_df, physiological_features, "physiological", predictions_phy, r2_scores_phy)
 
-    print("\nFinished training.")
-
+    print("📦 Saving models...")
     os.makedirs("models", exist_ok=True)
     joblib.dump(predictions_met, "models/predictions_met.pkl")
     joblib.dump(predictions_phy, "models/predictions_phy.pkl")
@@ -139,3 +133,5 @@ def train_and_save_models():
     joblib.dump(sample_counts_phy, "models/sample_counts_phy.pkl")
     joblib.dump(metabolite_features, "models/metabolite_features.pkl")
     joblib.dump(physiological_features, "models/physiological_features.pkl")
+
+    print("✅ Model training and saving completed.")

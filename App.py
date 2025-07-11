@@ -1,21 +1,16 @@
 import streamlit as st
+st.set_page_config(page_title="Grapevine Prediction App", layout="wide")
 import os
 import pandas as pd
 import plotly.express as px
 import numpy as np
 import importlib
 import joblib
-from Train_Model import train_and_save_models  # ✅ שורת הייבוא החדשה
+from Train_Model import train_and_save_models
 
-# === Function to Load Models ===
+# === Load Models Efficiently (cached) ===
+@st.cache_resource
 def load_model_state():
-    global predictions_met, predictions_phy
-    global metabolite_features, physiological_features
-    global r2_scores_met, r2_scores_phy
-    global model_types_met, model_types_phy
-    global mae_scores_met, mae_scores_phy
-    global sample_counts_met, sample_counts_phy
-
     predictions_met = joblib.load("models/predictions_met.pkl")
     predictions_phy = joblib.load("models/predictions_phy.pkl")
     metabolite_features = joblib.load("models/metabolite_features.pkl")
@@ -29,9 +24,24 @@ def load_model_state():
     sample_counts_met = joblib.load("models/sample_counts_met.pkl")
     sample_counts_phy = joblib.load("models/sample_counts_phy.pkl")
 
-load_model_state()
+    return (
+        predictions_met, predictions_phy,
+        metabolite_features, physiological_features,
+        r2_scores_met, r2_scores_phy,
+        model_types_met, model_types_phy,
+        mae_scores_met, mae_scores_phy,
+        sample_counts_met, sample_counts_phy
+    )
 
-st.set_page_config(page_title="Grapevine Prediction App", layout="wide")
+(
+    predictions_met, predictions_phy,
+    metabolite_features, physiological_features,
+    r2_scores_met, r2_scores_phy,
+    model_types_met, model_types_phy,
+    mae_scores_met, mae_scores_phy,
+    sample_counts_met, sample_counts_phy
+) = load_model_state()
+
 st.title("🍇 Grapevine Prediction App")
 st.markdown("Use this tool to predict metabolite and physiological measurements for different grape varieties and temperatures.")
 
@@ -65,8 +75,8 @@ if st.session_state.get("retrain_after_delete"):
     st.sidebar.subheader("🔁 Retrain Model")
     if st.sidebar.button("Run Training (after delete)"):
         with st.spinner("Training model... Please wait."):
-            train_and_save_models()  # ✅ שינוי כאן
-        load_model_state()
+            train_and_save_models()
+        st.cache_resource.clear()  # Refresh cached models
         st.sidebar.success("Model retrained successfully!")
         st.session_state.pop("retrain_after_delete")
         st.rerun()
@@ -76,7 +86,7 @@ st.sidebar.subheader("📤  Add New Data for Training")
 st.sidebar.info("""
 Adding more data can improve model accuracy.
 
-Download the appropriate template, fill it with your data, and upload the completed file. Make sure not to change the column names so the system can read it correctly..
+Download the appropriate template, fill it with your data, and upload the completed file. Make sure not to change the column names so the system can read it correctly.
 """)
 
 with open("Metabolite_Data_Year_Template.xlsx", "rb") as metabofile:
@@ -119,21 +129,24 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
             with open(trained_path, "wb") as f:
                 f.write(uploaded.getbuffer())
             with st.spinner("Training model... Please wait."):
-                train_and_save_models()  # ✅ שינוי כאן
-            load_model_state()
+                train_and_save_models()
+            st.cache_resource.clear()
             st.sidebar.success("Model retrained successfully!")
             st.session_state["retrain_button_clicked"] = True
             st.session_state.pop("retrain_needed")
             st.rerun()
 
 # === Prediction Interface ===
-user_temp = st.slider("Select Temperature (°C)", min_value=10.0, max_value=45.0, step=0.5, value=35.0)
+user_temp = st.slider("Select Temperature (°C)", min_value=10, max_value=45, step=1, value=35)
 all_varieties_met = sorted(set([k[0] for k in predictions_met.keys()]))
 all_varieties_phy = sorted(set([k[0] for k in predictions_phy.keys()]))
 all_varieties = sorted(set(all_varieties_met + all_varieties_phy))
 selected_varieties = st.multiselect("Select grape varieties", all_varieties, default=[])
 all_features = metabolite_features + physiological_features
 selected_features = st.multiselect("Select features to display", all_features, default=[])
+
+selected_metabolite_features = [f for f in selected_features if f in metabolite_features]
+selected_physiological_features = [f for f in selected_features if f in physiological_features]
 
 def render_table_as_html(df):
     styled_rows = []
@@ -161,64 +174,68 @@ def render_table_as_html(df):
     st.markdown(html_table, unsafe_allow_html=True)
 
 if st.button("Generate Predictions"):
-    st.header("Metabolite Predictions")
-    for feature in metabolite_features:
-        if feature not in selected_features:
-            continue
-        preds = {}
-        for variety in all_varieties_met:
-            if selected_varieties and variety not in selected_varieties:
-                continue
-            model = predictions_met.get((variety, feature))
-            r2 = r2_scores_met.get((variety, feature))
-            if model is None:
-                continue
-            pred = model.predict(pd.DataFrame([[user_temp]], columns=["Temperature (°C)"]))[0]
-            preds[variety] = {"Prediction": pred, "R²": r2}
-        if preds:
-            df = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
-            df["MAE%"] = df.apply(lambda row: mae_scores_met.get((row["Variety"], feature), np.nan), axis=1)
-            df["MAE%"] = df["MAE%"].map("{:.2f}".format)
-            df["Model"] = df.apply(lambda row: model_types_met.get((row["Variety"], feature), ""), axis=1)
-            df["Samples"] = df.apply(lambda row: sample_counts_met.get((row["Variety"], feature), np.nan), axis=1)
-            df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
-            df["Prediction"] = df["Prediction"].map("{:,.2f}".format)
-            df["R²"] = df["R²"].map("{:.4f}".format)
-            st.markdown(f"#### {feature}")
-            fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
-            fig.update_traces(textposition="outside")
-            fig.update_layout(margin=dict(t=100, b=40))
-            st.plotly_chart(fig, use_container_width=True)
-            render_table_as_html(df)
-            st.markdown("<hr style='margin-top:30px;margin-bottom:30px;'>", unsafe_allow_html=True)
+    if selected_metabolite_features:
+        st.header("Metabolite Predictions")
+        for feature in selected_metabolite_features:
+            preds = {}
+            for variety in all_varieties_met:
+                if selected_varieties and variety not in selected_varieties:
+                    continue
+                model = predictions_met.get((variety, feature))
+                r2 = r2_scores_met.get((variety, feature))
+                if model is None:
+                    continue
+                try:
+                    pred = model.predict(pd.DataFrame([[user_temp]], columns=["Temperature (°C)"]))[0]
+                except:
+                    continue
+                preds[variety] = {"Prediction": pred, "R²": r2}
+            if preds:
+                df = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
+                df["MAE%"] = df.apply(lambda row: mae_scores_met.get((row["Variety"], feature), np.nan), axis=1)
+                df["MAE%"] = df["MAE%"].map("{:.2f}".format)
+                df["Model"] = df.apply(lambda row: model_types_met.get((row["Variety"], feature), ""), axis=1)
+                df["Samples"] = df.apply(lambda row: sample_counts_met.get((row["Variety"], feature), np.nan), axis=1)
+                df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
+                df["Prediction"] = df["Prediction"].map("{:,.2f}".format)
+                df["R²"] = df["R²"].map("{:.4f}".format)
+                st.markdown(f"#### {feature}")
+                fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
+                fig.update_traces(textposition="outside")
+                fig.update_layout(margin=dict(t=100, b=40))
+                st.plotly_chart(fig, use_container_width=True)
+                render_table_as_html(df)
+                st.markdown("<hr style='margin-top:30px;margin-bottom:30px;'>", unsafe_allow_html=True)
 
-    st.header("Physiological Predictions")
-    for feature in physiological_features:
-        if feature not in selected_features:
-            continue
-        preds = {}
-        for variety in all_varieties_phy:
-            if selected_varieties and variety not in selected_varieties:
-                continue
-            model = predictions_phy.get((variety, feature))
-            r2 = r2_scores_phy.get((variety, feature))
-            if model is None:
-                continue
-            pred = model.predict(pd.DataFrame([[user_temp]], columns=["Temperature (°C)"]))[0]
-            preds[variety] = {"Prediction": pred, "R²": r2}
-        if preds:
-            df = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
-            df["MAE%"] = df.apply(lambda row: mae_scores_phy.get((row["Variety"], feature), np.nan), axis=1)
-            df["MAE%"] = df["MAE%"].map("{:.2f}".format)
-            df["Model"] = df.apply(lambda row: model_types_phy.get((row["Variety"], feature), ""), axis=1)
-            df["Samples"] = df.apply(lambda row: sample_counts_phy.get((row["Variety"], feature), np.nan), axis=1)
-            df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
-            df["Prediction"] = df["Prediction"].map("{:,.2f}".format)
-            df["R²"] = df["R²"].map("{:.4f}".format)
-            st.markdown(f"#### {feature}")
-            fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
-            fig.update_traces(textposition="outside")
-            fig.update_layout(margin=dict(t=100, b=40))
-            st.plotly_chart(fig, use_container_width=True)
-            render_table_as_html(df)
-            st.markdown("<hr style='margin-top:30px;margin-bottom:30px;'>", unsafe_allow_html=True)
+    if selected_physiological_features:
+        st.header("Physiological Predictions")
+        for feature in selected_physiological_features:
+            preds = {}
+            for variety in all_varieties_phy:
+                if selected_varieties and variety not in selected_varieties:
+                    continue
+                model = predictions_phy.get((variety, feature))
+                r2 = r2_scores_phy.get((variety, feature))
+                if model is None:
+                    continue
+                try:
+                    pred = model.predict(pd.DataFrame([[user_temp]], columns=["Temperature (°C)"]))[0]
+                except:
+                    continue
+                preds[variety] = {"Prediction": pred, "R²": r2}
+            if preds:
+                df = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
+                df["MAE%"] = df.apply(lambda row: mae_scores_phy.get((row["Variety"], feature), np.nan), axis=1)
+                df["MAE%"] = df["MAE%"].map("{:.2f}".format)
+                df["Model"] = df.apply(lambda row: model_types_phy.get((row["Variety"], feature), ""), axis=1)
+                df["Samples"] = df.apply(lambda row: sample_counts_phy.get((row["Variety"], feature), np.nan), axis=1)
+                df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
+                df["Prediction"] = df["Prediction"].map("{:,.2f}".format)
+                df["R²"] = df["R²"].map("{:.4f}".format)
+                st.markdown(f"#### {feature}")
+                fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
+                fig.update_traces(textposition="outside")
+                fig.update_layout(margin=dict(t=100, b=40))
+                st.plotly_chart(fig, use_container_width=True)
+                render_table_as_html(df)
+                st.markdown("<hr style='margin-top:30px;margin-bottom:30px;'>", unsafe_allow_html=True)
