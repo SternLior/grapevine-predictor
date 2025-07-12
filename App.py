@@ -56,6 +56,8 @@ physiological_required_cols = pd.read_excel("Physiological_Data_Year_Template.xl
 # === Sidebar ===
 st.sidebar.title("Model Data Management")
 
+# Training logs will appear here during model training
+
 # Section 1: Show already used data
 trained_files = sorted([f for f in os.listdir(uploaded_dir) if f.startswith("trained__") and f.endswith(".xlsx")])
 st.sidebar.subheader("📁 Extra Data Used in Model Training")
@@ -76,7 +78,19 @@ if st.session_state.get("retrain_after_delete"):
     st.sidebar.subheader("🔁 Retrain Model")
     if st.sidebar.button("Run Training (after delete)"):
         with st.spinner("Training model... Please wait."):
-            train_and_save_models()
+            # Capture training logs
+            import io
+            import sys
+            from contextlib import redirect_stdout
+            
+            f = io.StringIO()
+            with redirect_stdout(f):
+                train_and_save_models()
+            
+            # Display logs in sidebar temporarily
+            logs = f.getvalue()
+            st.sidebar.text_area("📊 Training Logs (will disappear after refresh)", logs, height=200)
+            
         st.cache_resource.clear()  # Refresh cached models
         st.sidebar.success("Model retrained successfully!")
         st.session_state.pop("retrain_after_delete")
@@ -131,7 +145,19 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
             with open(trained_path, "wb") as f:
                 f.write(uploaded.getbuffer())
             with st.spinner("Training model... Please wait."):
-                train_and_save_models()
+                # Capture training logs
+                import io
+                import sys
+                from contextlib import redirect_stdout
+                
+                f = io.StringIO()
+                with redirect_stdout(f):
+                    train_and_save_models()
+                
+                # Display logs in sidebar temporarily
+                logs = f.getvalue()
+                st.sidebar.text_area("📊 Training Logs (will disappear after refresh)", logs, height=200)
+                
             st.cache_resource.clear()
             st.sidebar.success("Model retrained successfully!")
             st.session_state["retrain_button_clicked"] = True
