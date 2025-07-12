@@ -212,7 +212,19 @@ def render_table_as_html(df):
     """
     st.markdown(html_table, unsafe_allow_html=True)
 
-if st.button("Generate Predictions"):
+# Check if user has selected at least one variety and one feature
+has_selected_variety = len(selected_varieties) > 0
+has_selected_feature = len(selected_features) > 0
+button_enabled = has_selected_variety and has_selected_feature
+
+# Create tooltip message
+if not button_enabled:
+    tooltip_msg = "Please select at least one variety and one feature to generate predictions"
+else:
+    tooltip_msg = "Generate predictions for selected varieties and features"
+
+# Generate Predictions button with conditional enabling
+if st.button("Generate Predictions", disabled=not button_enabled, help=tooltip_msg):
     # Store all prediction data for download
     all_predictions_data = []
     filtered_predictions_data = []
