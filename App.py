@@ -6,6 +6,7 @@ import plotly.express as px
 import numpy as np
 import importlib
 import joblib
+import io
 from Train_Model import train_and_save_models
 
 # === Load Models Efficiently (cached) ===
@@ -212,6 +213,10 @@ def render_table_as_html(df):
     st.markdown(html_table, unsafe_allow_html=True)
 
 if st.button("Generate Predictions"):
+    # Store all prediction data for download
+    all_predictions_data = []
+    filtered_predictions_data = []
+    
     if selected_metabolite_features:
         st.header("Metabolite Predictions")
         for feature in selected_metabolite_features:
@@ -237,6 +242,20 @@ if st.button("Generate Predictions"):
                 df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
                 df["Prediction"] = pd.Series(df["Prediction"]).map("{:,.2f}".format)
                 df["R²"] = pd.Series(df["R²"]).map("{:.4f}".format)
+                
+                # Store data for download (numerical format)
+                df_numerical = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
+                df_numerical["MAE%"] = df_numerical.apply(lambda row: mae_scores_met.get((row["Variety"], feature), np.nan), axis=1)
+                df_numerical["Model"] = df_numerical.apply(lambda row: model_types_met.get((row["Variety"], feature), ""), axis=1)
+                df_numerical["Samples"] = df_numerical.apply(lambda row: sample_counts_met.get((row["Variety"], feature), np.nan), axis=1)
+                df_numerical["Feature"] = feature
+                df_numerical["Type"] = "Metabolite"
+                df_numerical["Temperature"] = user_temp
+                df_numerical = df_numerical[["Variety", "Feature", "Type", "Temperature", "Prediction", "R²", "MAE%", "Model", "Samples"]]
+                
+                filtered_predictions_data.append(df_numerical)
+                all_predictions_data.append(df_numerical)
+                
                 st.markdown(f"#### {feature}")
                 fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
                 fig.update_traces(textposition="outside")
@@ -270,6 +289,20 @@ if st.button("Generate Predictions"):
                 df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
                 df["Prediction"] = pd.Series(df["Prediction"]).map("{:,.2f}".format)
                 df["R²"] = pd.Series(df["R²"]).map("{:.4f}".format)
+                
+                # Store data for download (numerical format)
+                df_numerical = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
+                df_numerical["MAE%"] = df_numerical.apply(lambda row: mae_scores_phy.get((row["Variety"], feature), np.nan), axis=1)
+                df_numerical["Model"] = df_numerical.apply(lambda row: model_types_phy.get((row["Variety"], feature), ""), axis=1)
+                df_numerical["Samples"] = df_numerical.apply(lambda row: sample_counts_phy.get((row["Variety"], feature), np.nan), axis=1)
+                df_numerical["Feature"] = feature
+                df_numerical["Type"] = "Physiological"
+                df_numerical["Temperature"] = user_temp
+                df_numerical = df_numerical[["Variety", "Feature", "Type", "Temperature", "Prediction", "R²", "MAE%", "Model", "Samples"]]
+                
+                filtered_predictions_data.append(df_numerical)
+                all_predictions_data.append(df_numerical)
+                
                 st.markdown(f"#### {feature}")
                 fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
                 fig.update_traces(textposition="outside")
@@ -277,3 +310,93 @@ if st.button("Generate Predictions"):
                 st.plotly_chart(fig, use_container_width=True)
                 render_table_as_html(df)
                 st.markdown("<hr style='margin-top:30px;margin-bottom:30px;'>", unsafe_allow_html=True)
+
+    # Generate all data for download
+    def generate_all_predictions():
+        all_data = []
+        temperatures = range(10, 46)  # 10°C to 45°C
+        
+        for temp in temperatures:
+            for variety in all_varieties_met:
+                for feature in metabolite_features:
+                    model = predictions_met.get((variety, feature))
+                    r2 = r2_scores_met.get((variety, feature))
+                    if model is None:
+                        continue
+                    try:
+                        pred = model.predict(pd.DataFrame([[temp]], columns=pd.Index(["Temperature (°C)"])))[0]
+                    except Exception:
+                        continue
+                    
+                    row = {
+                        "Variety": variety,
+                        "Feature": feature,
+                        "Type": "Metabolite",
+                        "Temperature": temp,
+                        "Prediction": pred,
+                        "R²": r2,
+                        "MAE%": mae_scores_met.get((variety, feature), np.nan),
+                        "Model": model_types_met.get((variety, feature), ""),
+                        "Samples": sample_counts_met.get((variety, feature), np.nan)
+                    }
+                    all_data.append(row)
+            
+            for variety in all_varieties_phy:
+                for feature in physiological_features:
+                    model = predictions_phy.get((variety, feature))
+                    r2 = r2_scores_phy.get((variety, feature))
+                    if model is None:
+                        continue
+                    try:
+                        pred = model.predict(pd.DataFrame([[temp]], columns=pd.Index(["Temperature (°C)"])))[0]
+                    except Exception:
+                        continue
+                    
+                    row = {
+                        "Variety": variety,
+                        "Feature": feature,
+                        "Type": "Physiological",
+                        "Temperature": temp,
+                        "Prediction": pred,
+                        "R²": r2,
+                        "MAE%": mae_scores_phy.get((variety, feature), np.nan),
+                        "Model": model_types_phy.get((variety, feature), ""),
+                        "Samples": sample_counts_phy.get((variety, feature), np.nan)
+                    }
+                    all_data.append(row)
+        
+        return pd.DataFrame(all_data)
+    
+    # Add download buttons at the end
+    st.markdown("---")
+    st.subheader("Download Data")
+    
+    # Download filtered data button
+    if filtered_predictions_data:
+        filtered_df = pd.concat(filtered_predictions_data, ignore_index=True)
+        # Convert to Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl', mode='w') as writer:
+            filtered_df.to_excel(writer, sheet_name='Filtered_Predictions', index=False)
+        output.seek(0)
+        st.download_button(
+            label="Download filtered data",
+            data=output.getvalue(),
+            file_name=f"filtered_predictions_{user_temp}C.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    
+    # Download all data button (always available)
+    all_df = generate_all_predictions()
+    if not all_df.empty:
+        # Convert to Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl', mode='w') as writer:
+            all_df.to_excel(writer, sheet_name='All_Predictions', index=False)
+        output.seek(0)
+        st.download_button(
+            label="Download all data",
+            data=output.getvalue(),
+            file_name="all_predictions_all_temperatures.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
