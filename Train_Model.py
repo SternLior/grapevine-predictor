@@ -135,3 +135,6 @@ def train_and_save_models():
     joblib.dump(physiological_features, "models/physiological_features.pkl")
 
     print("✅ Model training and saving completed.")
+
+if __name__ == "__main__":
+    train_and_save_models()
