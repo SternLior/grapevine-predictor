@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
+from tqdm import tqdm
 
 pd.set_option('display.float_format', '{:.4f}'.format)
 
@@ -67,52 +68,70 @@ def train_and_save_models():
         print(f"🔁 Training started for {name} features...")
         df = df[['Temperature (°C)', 'Variety'] + features].dropna(subset=['Temperature (°C)', 'Variety'])
 
+        # Count total combinations for progress bar
+        total_combinations = 0
         for variety in df['Variety'].unique():
             variety_df = df[df['Variety'] == variety]
             for feature in features:
                 data_filtered = variety_df[['Temperature (°C)', feature]].dropna()
-                if data_filtered.empty or len(data_filtered) < 10:
-                    continue
+                if not data_filtered.empty and len(data_filtered) >= 10:
+                    total_combinations += 1
 
-                X = data_filtered[['Temperature (°C)']]
-                y = data_filtered[feature].reset_index(drop=True)
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                if len(X_train) == 0:
-                    continue
+        print(f"📊 Training {total_combinations} variety-feature combinations...")
+        
+        with tqdm(total=total_combinations, desc=f"Training {name} models") as pbar:
+            for variety in df['Variety'].unique():
+                variety_df = df[df['Variety'] == variety]
+                for feature in features:
+                    data_filtered = variety_df[['Temperature (°C)', feature]].dropna()
+                    if data_filtered.empty or len(data_filtered) < 10:
+                        continue
 
-                models = {
-                    'XGBoost': XGBRegressor(n_estimators=50, max_depth=4, learning_rate=0.1, random_state=42,
-                                            n_jobs=-1),
-                    'RandomForest': RandomForestRegressor(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1),
-                    'LinearRegression': LinearRegression()
-                }
+                    X = data_filtered[['Temperature (°C)']]
+                    y = data_filtered[feature].reset_index(drop=True)
+                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                    if len(X_train) == 0:
+                        continue
 
+                    # Simplified model selection - start with fastest models
+                    models = {
+                        'LinearRegression': LinearRegression(),
+                        'RandomForest': RandomForestRegressor(n_estimators=25, max_depth=3, random_state=42, n_jobs=1),
+                        'XGBoost': XGBRegressor(n_estimators=25, max_depth=3, learning_rate=0.1, random_state=42, n_jobs=1)
+                    }
 
-                results = {}
-                for model_name, model in models.items():
-                    model.fit(X_train, y_train)
-                    y_pred = model.predict(X_test)
-                    mae = mean_absolute_error(y_test, y_pred)
-                    rmse = mean_squared_error(y_test, y_pred) ** 0.5
-                    r2 = r2_score(y_test, y_pred)
-                    mean_actual = y_test.mean()
-                    mae_percent = (mae / mean_actual) * 100 if mean_actual != 0 else float('nan')
-                    results[model_name] = (mae, rmse, r2, mae_percent, model)
+                    results = {}
+                    for model_name, model in models.items():
+                        try:
+                            model.fit(X_train, y_train)
+                            y_pred = model.predict(X_test)
+                            mae = mean_absolute_error(y_test, y_pred)
+                            rmse = mean_squared_error(y_test, y_pred) ** 0.5
+                            r2 = r2_score(y_test, y_pred)
+                            mean_actual = float(pd.Series(y_test).mean())  # Fix linter error
+                            mae_percent = (mae / mean_actual) * 100 if mean_actual != 0 else float('nan')
+                            results[model_name] = (mae, rmse, r2, mae_percent, model)
+                        except Exception as e:
+                            print(f"⚠️ Error training {model_name} for {variety}-{feature}: {e}")
+                            continue
 
-                best_model_name = max(results, key=lambda k: results[k][2])
-                best_mae, best_rmse, best_r2, best_mae_percent, best_model = results[best_model_name]
+                    if results:
+                        best_model_name = max(results, key=lambda k: results[k][2])
+                        best_mae, best_rmse, best_r2, best_mae_percent, best_model = results[best_model_name]
 
-                store_dict[(variety, feature)] = best_model
-                score_dict[(variety, feature)] = best_r2
+                        store_dict[(variety, feature)] = best_model
+                        score_dict[(variety, feature)] = best_r2
 
-                if name == "metabolite":
-                    model_types_met[(variety, feature)] = best_model_name
-                    mae_scores_met[(variety, feature)] = best_mae_percent
-                    sample_counts_met[(variety, feature)] = len(data_filtered)
-                else:
-                    model_types_phy[(variety, feature)] = best_model_name
-                    mae_scores_phy[(variety, feature)] = best_mae_percent
-                    sample_counts_phy[(variety, feature)] = len(data_filtered)
+                        if name == "metabolite":
+                            model_types_met[(variety, feature)] = best_model_name
+                            mae_scores_met[(variety, feature)] = best_mae_percent
+                            sample_counts_met[(variety, feature)] = len(data_filtered)
+                        else:
+                            model_types_phy[(variety, feature)] = best_model_name
+                            mae_scores_phy[(variety, feature)] = best_mae_percent
+                            sample_counts_phy[(variety, feature)] = len(data_filtered)
+
+                    pbar.update(1)
 
         print(f"✅ Finished training for {name}.")
 

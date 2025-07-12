@@ -6,3 +6,4 @@ xgboost~=3.0.0
 plotly~=6.0.1
 openpyxl
 joblib~=1.4.2
+tqdm~=4.66.1
