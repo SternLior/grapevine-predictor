@@ -7,7 +7,7 @@ import numpy as np
 import importlib
 import joblib
 import io
-from Train_Model import train_and_save_models, XGBoostRandomForestEnsemble
+from Train_Model import train_and_save_models
 
 # === Load Models Efficiently (cached) ===
 @st.cache_resource
@@ -212,19 +212,7 @@ def render_table_as_html(df):
     """
     st.markdown(html_table, unsafe_allow_html=True)
 
-# Check if user has selected at least one variety and one feature
-has_selected_variety = len(selected_varieties) > 0
-has_selected_feature = len(selected_features) > 0
-button_enabled = has_selected_variety and has_selected_feature
-
-# Create tooltip message
-if not button_enabled:
-    tooltip_msg = "Please select at least one variety and one feature to generate predictions"
-else:
-    tooltip_msg = "Generate predictions for selected varieties and features"
-
-# Generate Predictions button with conditional enabling
-if st.button("Generate Predictions", disabled=not button_enabled, help=tooltip_msg):
+if st.button("Generate Predictions"):
     # Store all prediction data for download
     all_predictions_data = []
     filtered_predictions_data = []
@@ -380,38 +368,36 @@ if st.button("Generate Predictions", disabled=not button_enabled, help=tooltip_m
         return pd.DataFrame(all_data)
     
     # Add download buttons at the end
-    st.markdown("---")
-    st.subheader("Download Data")
-    
-    # Download filtered data button
-    if filtered_predictions_data:
-        filtered_df = pd.concat(filtered_predictions_data, ignore_index=True)
-        # Convert to Excel
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
-            filtered_df.to_excel(tmp_file.name, engine='openpyxl', sheet_name='Filtered_Predictions', index=False)
-            with open(tmp_file.name, 'rb') as f:
-                excel_data = f.read()
-        os.unlink(tmp_file.name)
-        st.download_button(
-            label="Download filtered data",
-            data=excel_data,
-            file_name=f"filtered_predictions_{user_temp}C.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    
-    # Download all data button (always available)
-    all_df = generate_all_predictions()
-    if not all_df.empty:
-        # Convert to Excel
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
-            all_df.to_excel(tmp_file.name, engine='openpyxl', sheet_name='All_Predictions', index=False)
-            with open(tmp_file.name, 'rb') as f:
-                excel_data = f.read()
-        os.unlink(tmp_file.name)
-        st.download_button(
-            label="Download all data",
-            data=excel_data,
-            file_name="all_predictions_all_temperatures.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    if filtered_predictions_data or all_predictions_data:
+        st.markdown("---")
+        st.subheader("Download Data")
+        
+        # Download filtered data button
+        if filtered_predictions_data:
+            filtered_df = pd.concat(filtered_predictions_data, ignore_index=True)
+            # Convert to Excel
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl', mode='w') as writer:
+                filtered_df.to_excel(writer, sheet_name='Filtered_Predictions', index=False)
+            output.seek(0)
+            st.download_button(
+                label="Download filtered data",
+                data=output.getvalue(),
+                file_name=f"filtered_predictions_{user_temp}C.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        
+        # Download all data button
+        all_df = generate_all_predictions()
+        if not all_df.empty:
+            # Convert to Excel
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl', mode='w') as writer:
+                all_df.to_excel(writer, sheet_name='All_Predictions', index=False)
+            output.seek(0)
+            st.download_button(
+                label="Download all data",
+                data=output.getvalue(),
+                file_name="all_predictions_all_temperatures.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )

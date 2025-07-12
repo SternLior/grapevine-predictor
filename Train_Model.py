@@ -3,6 +3,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.base import BaseEstimator, RegressorMixin
 import pandas as pd
 import numpy as np
 import os
@@ -10,6 +11,57 @@ import joblib
 from tqdm import tqdm
 
 pd.set_option('display.float_format', '{:.4f}'.format)
+
+class XGBoostRandomForestEnsemble(BaseEstimator, RegressorMixin):
+    """
+    Ensemble model that combines XGBoost and Random Forest predictions
+    """
+    def __init__(self, xgb_params=None, rf_params=None, ensemble_method='average'):
+        self.xgb_params = xgb_params or {
+            'n_estimators': 25, 
+            'max_depth': 3, 
+            'learning_rate': 0.1, 
+            'random_state': 42, 
+            'n_jobs': 1
+        }
+        self.rf_params = rf_params or {
+            'n_estimators': 25, 
+            'max_depth': 3, 
+            'random_state': 42, 
+            'n_jobs': 1,
+            'criterion': 'squared_error',
+            'bootstrap': True,
+            'oob_score': False,
+            'warm_start': False
+        }
+        self.ensemble_method = ensemble_method
+        self.xgb_model = XGBRegressor(**self.xgb_params)
+        self.rf_model = RandomForestRegressor(**self.rf_params)
+        self.is_fitted = False
+    
+    def fit(self, X, y):
+        # Train XGBoost model
+        self.xgb_model.fit(X, y)
+        
+        # Train Random Forest model
+        self.rf_model.fit(X, y)
+        
+        self.is_fitted = True
+        return self
+    
+    def predict(self, X):
+        if not self.is_fitted:
+            raise ValueError("Model must be fitted before making predictions")
+        
+        # Get predictions from both models
+        xgb_pred = self.xgb_model.predict(X)
+        rf_pred = self.rf_model.predict(X)
+        
+        # Combine predictions (simple average)
+        if self.ensemble_method == 'average':
+            return (xgb_pred + rf_pred) / 2
+        else:
+            return (xgb_pred + rf_pred) / 2  # Default to average
 
 def train_and_save_models():
     base_metabolite_file = "Metabolite_Data_2022.xlsx"
@@ -97,7 +149,8 @@ def train_and_save_models():
                     models = {
                         'LinearRegression': LinearRegression(),
                         'RandomForest': RandomForestRegressor(n_estimators=25, max_depth=3, random_state=42, n_jobs=1),
-                        'XGBoost': XGBRegressor(n_estimators=25, max_depth=3, learning_rate=0.1, random_state=42, n_jobs=1)
+                        'XGBoost': XGBRegressor(n_estimators=25, max_depth=3, learning_rate=0.1, random_state=42, n_jobs=1),
+                        'XGB+RF': XGBoostRandomForestEnsemble()
                     }
 
                     results = {}
