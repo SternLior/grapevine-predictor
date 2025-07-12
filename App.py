@@ -33,6 +33,7 @@ def load_model_state():
         sample_counts_met, sample_counts_phy
     )
 
+# Load model state
 (
     predictions_met, predictions_phy,
     metabolite_features, physiological_features,
@@ -124,7 +125,8 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
         st.sidebar.success(f"Uploaded {uploaded.name} (detected as {file_type}). Click **Retrain Model** to include this file in model training.")
         st.sidebar.subheader("🔁 Retrain Model to include uploaded data")
         if st.sidebar.button("Retrain Model"):
-            os.remove(save_path)
+            if save_path and os.path.exists(save_path):
+                os.remove(save_path)
             trained_path = os.path.join(uploaded_dir, f"trained__{uploaded.name}")
             with open(trained_path, "wb") as f:
                 f.write(uploaded.getbuffer())
@@ -186,19 +188,19 @@ if st.button("Generate Predictions"):
                 if model is None:
                     continue
                 try:
-                    pred = model.predict(pd.DataFrame([[user_temp]], columns=["Temperature (°C)"]))[0]
-                except:
+                    pred = model.predict(pd.DataFrame([[user_temp]], columns=pd.Index(["Temperature (°C)"])))[0]
+                except Exception:
                     continue
                 preds[variety] = {"Prediction": pred, "R²": r2}
             if preds:
                 df = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
                 df["MAE%"] = df.apply(lambda row: mae_scores_met.get((row["Variety"], feature), np.nan), axis=1)
-                df["MAE%"] = df["MAE%"].map("{:.2f}".format)
+                df["MAE%"] = df["MAE%"].astype(float).map("{:.2f}".format)
                 df["Model"] = df.apply(lambda row: model_types_met.get((row["Variety"], feature), ""), axis=1)
                 df["Samples"] = df.apply(lambda row: sample_counts_met.get((row["Variety"], feature), np.nan), axis=1)
                 df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
-                df["Prediction"] = df["Prediction"].map("{:,.2f}".format)
-                df["R²"] = df["R²"].map("{:.4f}".format)
+                df["Prediction"] = pd.Series(df["Prediction"]).map("{:,.2f}".format)
+                df["R²"] = pd.Series(df["R²"]).map("{:.4f}".format)
                 st.markdown(f"#### {feature}")
                 fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
                 fig.update_traces(textposition="outside")
@@ -219,19 +221,19 @@ if st.button("Generate Predictions"):
                 if model is None:
                     continue
                 try:
-                    pred = model.predict(pd.DataFrame([[user_temp]], columns=["Temperature (°C)"]))[0]
-                except:
+                    pred = model.predict(pd.DataFrame([[user_temp]], columns=pd.Index(["Temperature (°C)"])))[0]
+                except Exception:
                     continue
                 preds[variety] = {"Prediction": pred, "R²": r2}
             if preds:
                 df = pd.DataFrame.from_dict(preds, orient="index").reset_index().rename(columns={"index": "Variety"})
                 df["MAE%"] = df.apply(lambda row: mae_scores_phy.get((row["Variety"], feature), np.nan), axis=1)
-                df["MAE%"] = df["MAE%"].map("{:.2f}".format)
+                df["MAE%"] = df["MAE%"].astype(float).map("{:.2f}".format)
                 df["Model"] = df.apply(lambda row: model_types_phy.get((row["Variety"], feature), ""), axis=1)
                 df["Samples"] = df.apply(lambda row: sample_counts_phy.get((row["Variety"], feature), np.nan), axis=1)
                 df = df[["Variety", "Prediction", "R²", "MAE%", "Model", "Samples"]]
-                df["Prediction"] = df["Prediction"].map("{:,.2f}".format)
-                df["R²"] = df["R²"].map("{:.4f}".format)
+                df["Prediction"] = pd.Series(df["Prediction"]).map("{:,.2f}".format)
+                df["R²"] = pd.Series(df["R²"]).map("{:.4f}".format)
                 st.markdown(f"#### {feature}")
                 fig = px.bar(df, x="Variety", y="Prediction", text=df["Prediction"], height=500)
                 fig.update_traces(textposition="outside")
