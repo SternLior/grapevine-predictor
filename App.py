@@ -68,6 +68,11 @@ if trained_files:
         col1.markdown(f"📄 {display_name}")
         if col2.button("🗑️", key=f"delete_{file}"):
             os.remove(os.path.join(uploaded_dir, file))
+            # Clear the processed flag for this file so it can be re-uploaded
+            file_name = file.replace("trained__", "")
+            processed_key = f"processed_{file_name}"
+            if processed_key in st.session_state:
+                st.session_state.pop(processed_key)
             st.sidebar.info("The file was removed. Please click **Retrain Model** below to update the model without this file.")
             st.session_state["retrain_after_delete"] = True
 else:
@@ -135,7 +140,10 @@ if uploaded:
         st.session_state["retrain_needed"] = None
 
 if uploaded and file_valid and st.session_state.get("retrain_needed") == uploaded.name:
-    if "retrain_button_clicked" not in st.session_state:
+    # Check if this specific file was already processed
+    file_processed_key = f"processed_{uploaded.name}"
+    
+    if file_processed_key not in st.session_state:
         st.sidebar.success(f"Uploaded {uploaded.name} (detected as {file_type}). Click **Retrain Model** to include this file in model training.")
         st.sidebar.subheader("🔁 Retrain Model to include uploaded data")
         if st.sidebar.button("Retrain Model"):
@@ -160,9 +168,11 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
                 
             st.cache_resource.clear()
             st.sidebar.success("Model retrained successfully!")
-            st.session_state["retrain_button_clicked"] = True
+            st.session_state[file_processed_key] = True
             st.session_state.pop("retrain_needed")
             st.rerun()
+    else:
+        st.sidebar.info(f"File {uploaded.name} has already been processed. Upload a different file or delete this one first.")
 
 # === Prediction Interface ===
 user_temp = st.slider("Select Temperature (°C)", min_value=10, max_value=45, step=1, value=35)
