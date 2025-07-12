@@ -83,6 +83,9 @@ else:
 if st.session_state.get("retrain_after_delete"):
     st.sidebar.subheader("🔁 Retrain Model")
     if st.sidebar.button("Run Training (after delete)"):
+        # Increment retrain counter to force widget reset
+        st.session_state["retrain_counter"] = st.session_state.get("retrain_counter", 0) + 1
+        
         with st.spinner("Training model... Please wait."):
             # Capture training logs
             import io
@@ -93,10 +96,6 @@ if st.session_state.get("retrain_after_delete"):
             with redirect_stdout(f):
                 train_and_save_models()
             
-            # Display logs in sidebar temporarily
-            logs = f.getvalue()
-            st.sidebar.text_area("📊 Training Logs (will disappear after refresh)", logs, height=200)
-            
         st.cache_resource.clear()  # Refresh cached models
         st.sidebar.success("Model retrained successfully!")
         st.session_state.pop("retrain_after_delete")
@@ -104,11 +103,7 @@ if st.session_state.get("retrain_after_delete"):
 
 # Section 2: Upload new data
 st.sidebar.subheader("📤  Add New Data for Training")
-st.sidebar.info("""
-Adding more data can improve model accuracy.
-
-Download the appropriate template, fill it with your data, and upload the completed file. Make sure not to change the column names so the system can read it correctly.
-""")
+st.sidebar.info("""Adding more data can improve model accuracy—just download the correct template, fill it without changing column names, and upload it.""")
 
 with open("Metabolite_Data_Year_Template.xlsx", "rb") as metabofile:
     st.sidebar.download_button("Download Metabolite template", metabofile, file_name="Metabolite_template.xlsx")
@@ -148,6 +143,9 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
         st.sidebar.success(f"Uploaded {uploaded.name} (detected as {file_type}). Click **Retrain Model** to include this file in model training.")
         st.sidebar.subheader("🔁 Retrain Model to include uploaded data")
         if st.sidebar.button("Retrain Model"):
+            # Increment retrain counter to force widget reset
+            st.session_state["retrain_counter"] = st.session_state.get("retrain_counter", 0) + 1
+            
             if save_path and os.path.exists(save_path):
                 os.remove(save_path)
             trained_path = os.path.join(uploaded_dir, f"trained__{uploaded.name}")
@@ -163,10 +161,6 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
                 with redirect_stdout(f):
                     train_and_save_models()
                 
-                # Display logs in sidebar temporarily
-                logs = f.getvalue()
-                st.sidebar.text_area("📊 Training Logs (will disappear after refresh)", logs, height=200)
-                
             st.cache_resource.clear()
             st.sidebar.success("Model retrained successfully!")
             st.session_state[file_processed_key] = True
@@ -177,12 +171,18 @@ if uploaded and file_valid and st.session_state.get("retrain_needed") == uploade
 
 # === Prediction Interface ===
 user_temp = st.slider("Select Temperature (°C)", min_value=10, max_value=45, step=1, value=35)
+
+# Get current varieties and features from the loaded models
 all_varieties_met = sorted(set([k[0] for k in predictions_met.keys()]))
 all_varieties_phy = sorted(set([k[0] for k in predictions_phy.keys()]))
 all_varieties = sorted(set(all_varieties_met + all_varieties_phy))
-selected_varieties = st.multiselect("Select grape varieties", all_varieties, default=[])
 all_features = metabolite_features + physiological_features
-selected_features = st.multiselect("Select features to display", all_features, default=[])
+
+# Use a key that changes when retraining happens to force widget reset
+retrain_key = st.session_state.get("retrain_counter", 0)
+
+selected_varieties = st.multiselect("Select grape varieties", all_varieties, default=[], key=f"varieties_{retrain_key}")
+selected_features = st.multiselect("Select features to display", all_features, default=[], key=f"features_{retrain_key}")
 
 selected_metabolite_features = [f for f in selected_features if f in metabolite_features]
 selected_physiological_features = [f for f in selected_features if f in physiological_features]

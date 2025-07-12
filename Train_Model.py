@@ -64,7 +64,7 @@ class XGBoostRandomForestEnsemble(BaseEstimator, RegressorMixin):
             return (xgb_pred + rf_pred) / 2  # Default to average
 
 def train_and_save_models():
-    base_metabolite_file = "Metabolite_Data_2022.xlsx"
+    base_metabolite_file = "Metabolite_Data_2022_2024.xlsx"
     base_physiological_file = "Physiological_data_2022-2023.xlsx"
     uploaded_dir = "uploaded_files"
     os.makedirs(uploaded_dir, exist_ok=True)
@@ -97,11 +97,22 @@ def train_and_save_models():
             classified_files["unknown"].append(fpath)
 
     def load_all_data(base_file, extra_file_paths):
-        dfs = [pd.read_excel(base_file)]
+        print(f"📁 Loading base file: {base_file}")
+        try:
+            base_df = pd.read_excel(base_file)
+            print(f"✅ Loaded {len(base_df)} rows from {base_file}")
+            dfs = [base_df]
+        except Exception as e:
+            print(f"❌ Error loading {base_file}: {e}")
+            return pd.DataFrame()
+        
         for path in extra_file_paths:
             if path in file_dataframes:
                 dfs.append(file_dataframes[path])
+                print(f"✅ Added {len(file_dataframes[path])} rows from {path}")
+        
         combined = pd.concat(dfs, ignore_index=True)
+        print(f"📊 Total combined data: {len(combined)} rows")
         return combined
 
     metabolite_df = load_all_data(base_metabolite_file, classified_files["metabolite"])
